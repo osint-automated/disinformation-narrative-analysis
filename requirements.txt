@@ -4,4 +4,3 @@ plotly
 openai
 sentence-transformers
 scikit-learn
-textwrap
