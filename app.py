@@ -149,10 +149,10 @@ if st.button("Run Analysis"):
                 txt_content += f"--- Chunk {i+1} ---\n{res.strip()}\n\n"
 
             txt_content += "=== Grouped Similar Narratives ===\n\n"
-            for rep, cluster_narratives in grouped.items():
-                # Collect chunks for all narratives in this cluster
-                cluster_chunks = sorted({chunk for n in cluster_narratives for chunk in narrative_chunks.get(n, [])})
-                txt_content += f"{rep} ({len(cluster_narratives)} mentions) — Appears in chunks: {cluster_chunks}\n"
+            for rep, count in grouped.items():
+                # Look up chunks for this representative narrative
+                cluster_chunks = sorted(narrative_chunks.get(rep, []))
+                txt_content += f"{rep} ({count} mentions) — Appears in chunks: {cluster_chunks}\n"
 
             # Streamlit download button
             st.download_button(
