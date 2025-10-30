@@ -61,7 +61,7 @@ def analyze_disinformation_llm(article_text: str, model="gpt-4o-mini"):
     chunks = chunk_text(article_text)
     all_results = []
     for i, chunk in enumerate(chunks, start=1):
-        st.write(f"🔍 Analyzing chunk {i}/{len(chunks)}...")
+        st.write(f"Analyzing chunk {i}/{len(chunks)}...")
         prompt = f"""
         You are a disinformation analyst.
         Identify any disinformation/misinformation/influence narratives.
@@ -114,10 +114,10 @@ def semantic_group_narratives(narratives, similarity_threshold=0.75):
 if st.button("Run Analysis"):
     with st.spinner("Running analysis..."):
         results = analyze_disinformation_llm(article_text)
-        st.success("✅ Analysis complete!")
+        st.success("Analysis complete!")
 
         # Display raw chunk results with wrapped text
-        st.subheader("📄 Per-Chunk Analysis")
+        st.subheader("Per-Chunk Analysis")
         for i, res in enumerate(results):
             with st.expander(f"Chunk {i+1}", expanded=False):
                 wrapped_text = textwrap.fill(res.strip(), width=120)
@@ -134,7 +134,7 @@ if st.button("Run Analysis"):
             all_narratives.extend(matches)
 
         if all_narratives:
-            st.subheader("📊 Grouping Similar Narratives")
+            st.subheader("Narratives Idenitified")
             grouped = semantic_group_narratives(all_narratives)
 
             for narrative, count in grouped.items():
@@ -143,17 +143,24 @@ if st.button("Run Analysis"):
                     st.write(f"Appears in chunks: {chunks}")
                     st.write("Supporting excerpts and analysis available in per-chunk expanders above.")
 
-            # Prepare CSV for download
-            csv_rows = []
-            for narrative, count in grouped.items():
-                chunks = narrative_chunks.get(narrative, [])
-                csv_rows.append({"Narrative": narrative, "Mentions": count, "Chunks": ",".join(map(str, chunks))})
-            df_csv = pd.DataFrame(csv_rows)
+            # --- Prepare TXT for download ---
+            txt_content = "=== Per-Chunk Analysis ===\n\n"
+            for i, res in enumerate(results):
+                txt_content += f"--- Chunk {i+1} ---\n{res.strip()}\n\n"
+
+            txt_content += "=== Grouped Similar Narratives ===\n\n"
+            for rep, cluster_narratives in grouped.items():
+                # Collect chunks for all narratives in this cluster
+                cluster_chunks = sorted({chunk for n in cluster_narratives for chunk in narrative_chunks.get(n, [])})
+                txt_content += f"{rep} ({len(cluster_narratives)} mentions) — Appears in chunks: {cluster_chunks}\n"
+
+            # Streamlit download button
             st.download_button(
-                "📥 Download Narrative Report (CSV)",
-                data=df_csv.to_csv(index=False).encode("utf-8"),
-                file_name="narratives_report.csv",
-                mime="text/csv"
+                "Download Analysis (TXT)",
+                data=txt_content.encode("utf-8"),
+                file_name="disinformation_analysis.txt",
+                mime="text/plain"
             )
+
         else:
             st.info("No distinct narratives identified.")
