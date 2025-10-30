@@ -98,7 +98,8 @@ def analyze_disinformation_llm(article_text: str, model="gpt-4o-mini"):
 # --- Semantic Grouping ---
 def semantic_group_narratives(narratives, similarity_threshold=0.75):
     if len(narratives) <= 1:
-        return {0: narratives}
+        return {narratives[0]: [narratives[0]]}
+    
     model = SentenceTransformer("all-MiniLM-L6-v2")
     embeddings = model.encode(narratives)
     clustering = AgglomerativeClustering(
@@ -108,14 +109,16 @@ def semantic_group_narratives(narratives, similarity_threshold=0.75):
         linkage="average"
     )
     labels = clustering.fit_predict(embeddings)
-    clustered = defaultdict(list)
+
+    clusters = defaultdict(list)
     for label, text in zip(labels, narratives):
-        clustered[label].append(text)
-    merged = {}
-    for label, group in clustered.items():
-        merged_label = group[0]
-        merged[merged_label] = len(group)
-    return merged
+        clusters[label].append(text)
+
+    grouped = {}
+    for label, group in clusters.items():
+        rep = group[0]  # representative narrative
+        grouped[rep] = group
+    return grouped
 
 # --- Run Analysis ---
 if st.button("Run Analysis"):
@@ -134,7 +137,7 @@ if st.button("Run Analysis"):
                 wrapped_text = textwrap.fill(res.strip(), width=120)
                 st.markdown(f"<pre style='white-space: pre-wrap;'>{wrapped_text}</pre>", unsafe_allow_html=True)
 
-        # Extract narratives
+        # Extract narratives per chunk
         narrative_chunks = defaultdict(list)
         all_narratives = []
         for idx, r in enumerate(results):
@@ -148,12 +151,12 @@ if st.button("Run Analysis"):
             st.subheader("Grouped Similar Narratives")
             grouped = semantic_group_narratives(all_narratives)
 
-            # Display grouped narratives
             grouped_text = []
-            for narrative, count in grouped.items():
-                chunks = narrative_chunks.get(narrative, [])
-                st.write(f"{narrative} ({count} mentions) — Appears in chunks: {chunks}")
-                grouped_text.append(f"{narrative} ({count} mentions) — Chunks: {chunks}")
+            for rep, cluster_narratives in grouped.items():
+                # Collect chunks for all narratives in this cluster
+                cluster_chunks = sorted({chunk for n in cluster_narratives for chunk in narrative_chunks.get(n, [])})
+                st.write(f"{rep} ({len(cluster_narratives)} mentions) — Appears in chunks: {cluster_chunks}")
+                grouped_text.append(f"{rep} ({len(cluster_narratives)} mentions) — Chunks: {cluster_chunks}")
 
             # Prepare TXT for download
             txt_content = "=== Per-Chunk Analysis ===\n\n"
