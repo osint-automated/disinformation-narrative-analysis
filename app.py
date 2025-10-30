@@ -1,9 +1,9 @@
 import re
 import textwrap
-import pandas as pd
 import streamlit as st
+import pandas as pd
 from openai import OpenAI
-from collections import Counter, defaultdict
+from collections import defaultdict
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import AgglomerativeClustering
 
@@ -16,13 +16,19 @@ if not openai_api_key:
     st.stop()
 client = OpenAI(api_key=openai_api_key)
 
-# --- File Upload ---
-uploaded_file = st.file_uploader("Upload an article (.txt) for analysis", type=["txt"])
-if uploaded_file is not None:
-    article_text = uploaded_file.read().decode("utf-8")
+# --- Input Selection ---
+input_option = st.radio(
+    "Choose input method:",
+    ("Upload a .txt file", "Paste text manually")
+)
+
+article_text = ""
+if input_option == "Upload a .txt file":
+    uploaded_file = st.file_uploader("Upload an article (.txt) for analysis", type=["txt"])
+    if uploaded_file is not None:
+        article_text = uploaded_file.read().decode("utf-8")
 else:
-    st.info("Please upload a `.txt` file to begin.")
-    st.stop()
+    article_text = st.text_area("Paste your article text here:", height=300)
 
 # --- Preprocessing ---
 def preprocess_text(text: str):
@@ -42,23 +48,38 @@ def chunk_text(text: str, max_chunk_size=3000):
         chunks.append(current_chunk.strip())
     return chunks
 
+# --- Emoji Removal ---
+def remove_emojis(text):
+    emoji_pattern = re.compile(
+        "[" 
+        "\U0001F600-\U0001F64F"  
+        "\U0001F300-\U0001F5FF"  
+        "\U0001F680-\U0001F6FF"  
+        "\U0001F1E0-\U0001F1FF"  
+        "\U00002702-\U000027B0"
+        "\U000024C2-\U0001F251"
+        "]+",
+        flags=re.UNICODE
+    )
+    return emoji_pattern.sub(r'', text)
+
 # --- LLM Analysis ---
 @st.cache_data(show_spinner=False)
 def analyze_disinformation_llm(article_text: str, model="gpt-4o-mini"):
     chunks = chunk_text(article_text)
     all_results = []
     for i, chunk in enumerate(chunks, start=1):
-        st.write(f"🔍 Analyzing chunk {i}/{len(chunks)}...")
+        st.write(f"Analyzing chunk {i}/{len(chunks)}...")
         prompt = f"""
         You are a disinformation analyst.
         Identify any disinformation/misinformation/influence narratives.
         For each:
         Disinformation Narrative Identified:
-        \n
+
         Supporting Excerpts:
-        \n
+
         Analysis:
-        \n
+
         Text:
         {textwrap.shorten(chunk, width=4000, placeholder="...")}
         """
@@ -70,7 +91,7 @@ def analyze_disinformation_llm(article_text: str, model="gpt-4o-mini"):
             ],
             temperature=0.2,
         )
-        chunk_result = response.choices[0].message.content.replace("**", "")
+        chunk_result = remove_emojis(response.choices[0].message.content.replace("**", ""))
         all_results.append(chunk_result)
     return all_results
 
@@ -90,7 +111,6 @@ def semantic_group_narratives(narratives, similarity_threshold=0.75):
     clustered = defaultdict(list)
     for label, text in zip(labels, narratives):
         clustered[label].append(text)
-    # Use first narrative in each cluster as representative
     merged = {}
     for label, group in clustered.items():
         merged_label = group[0]
@@ -99,19 +119,23 @@ def semantic_group_narratives(narratives, similarity_threshold=0.75):
 
 # --- Run Analysis ---
 if st.button("Run Analysis"):
+    if not article_text.strip():
+        st.warning("Please upload a file or paste text before running analysis.")
+        st.stop()
+
     with st.spinner("Running analysis..."):
         results = analyze_disinformation_llm(article_text)
-        st.success("✅ Analysis complete!")
+        st.success("Analysis complete!")
 
-        # Display raw chunk results with wrapped text
-        st.subheader("📄 Per-Chunk Analysis")
+        # Display per-chunk results
+        st.subheader("Per-Chunk Analysis")
         for i, res in enumerate(results):
             with st.expander(f"Chunk {i+1}", expanded=False):
                 wrapped_text = textwrap.fill(res.strip(), width=120)
                 st.markdown(f"<pre style='white-space: pre-wrap;'>{wrapped_text}</pre>", unsafe_allow_html=True)
 
-        # Extract narratives per chunk
-        narrative_chunks = defaultdict(list)  # narrative -> list of chunk indices
+        # Extract narratives
+        narrative_chunks = defaultdict(list)
         all_narratives = []
         for idx, r in enumerate(results):
             matches = re.findall(r"Disinformation Narrative Identified:\s*(.+)", r)
@@ -121,26 +145,29 @@ if st.button("Run Analysis"):
             all_narratives.extend(matches)
 
         if all_narratives:
-            st.subheader("📊 Grouping Similar Narratives")
+            st.subheader("Grouped Similar Narratives")
             grouped = semantic_group_narratives(all_narratives)
 
+            # Display grouped narratives
+            grouped_text = []
             for narrative, count in grouped.items():
                 chunks = narrative_chunks.get(narrative, [])
-                with st.expander(f"{narrative} ({count} mentions)"):
-                    st.write(f"Appears in chunks: {chunks}")
-                    st.write("Supporting excerpts and analysis available in per-chunk expanders above.")
+                st.write(f"{narrative} ({count} mentions) — Appears in chunks: {chunks}")
+                grouped_text.append(f"{narrative} ({count} mentions) — Chunks: {chunks}")
 
-            # Prepare CSV for download
-            csv_rows = []
-            for narrative, count in grouped.items():
-                chunks = narrative_chunks.get(narrative, [])
-                csv_rows.append({"Narrative": narrative, "Mentions": count, "Chunks": ",".join(map(str, chunks))})
-            df_csv = pd.DataFrame(csv_rows)
+            # Prepare TXT for download
+            txt_content = "=== Per-Chunk Analysis ===\n\n"
+            for i, res in enumerate(results):
+                txt_content += f"--- Chunk {i+1} ---\n{res.strip()}\n\n"
+
+            txt_content += "\n=== Grouped Narratives ===\n\n"
+            txt_content += "\n".join(grouped_text)
+
             st.download_button(
-                "📥 Download Narrative Report (CSV)",
-                data=df_csv.to_csv(index=False).encode("utf-8"),
-                file_name="narratives_report.csv",
-                mime="text/csv"
+                "Download Analysis (TXT)",
+                data=txt_content.encode("utf-8"),
+                file_name="disinformation_analysis.txt",
+                mime="text/plain"
             )
         else:
             st.info("No distinct narratives identified.")
