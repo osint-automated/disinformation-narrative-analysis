@@ -143,23 +143,21 @@ if st.button("Run Analysis"):
                     st.write(f"Appears in chunks: {chunks}")
                     st.write("Supporting excerpts and analysis available in per-chunk expanders above.")
 
-            # --- Prepare TXT for download ---
-            txt_content = "=== Per-Chunk Analysis ===\n\n"
-            for i, res in enumerate(results):
-                txt_content += f"--- Chunk {i+1} ---\n{res.strip()}\n\n"
-
-            txt_content += "=== Grouped Similar Narratives ===\n\n"
-            for rep, count in grouped.items():
-                # Look up chunks for this representative narrative
-                cluster_chunks = sorted(narrative_chunks.get(rep, []))
-                txt_content += f"{rep} ({count} mentions) — Appears in chunks: {cluster_chunks}\n"
+            # --- Prepare CSV for download ---
+            csv_data = []
+            for narrative, count in grouped.items():
+                chunks = sorted(narrative_chunks.get(narrative, []))
+                csv_data.append([narrative, count, ", ".join(map(str, chunks))])
+            
+            df = pd.DataFrame(csv_data, columns=["Narrative", "Mentions", "Appears in Chunks"])
+            csv_string = df.to_csv(index=False, encoding="utf-8")
 
             # Streamlit download button
             st.download_button(
-                "Download Analysis (TXT)",
-                data=txt_content.encode("utf-8"),
-                file_name="disinformation_analysis.txt",
-                mime="text/plain"
+                "Download Analysis (CSV)",
+                data=csv_string,
+                file_name="disinformation_analysis.csv",
+                mime="text/csv"
             )
 
         else:
