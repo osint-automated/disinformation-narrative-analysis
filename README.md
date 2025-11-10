@@ -4,8 +4,6 @@ This tool automates the detection and clustering of disinformation and influence
 
 A live version of this tool is available here: [https://disinformation-narrative-analysis.streamlit.app/](https://disinformation-narrative-analysis.streamlit.app/)
 
-A free version requiring no API key is available here: [https://lashunda-unsultry-frilly.ngrok-free.dev/](https://lashunda-unsultry-frilly.ngrok-free.dev/)
-
 ## How It Works
 
 The application follows a multi-step process to analyze text:
