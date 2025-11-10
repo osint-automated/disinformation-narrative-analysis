@@ -12,7 +12,16 @@ st.title("Disinformation Narrative Analysis")
 
 st.markdown("""
     This tool helps in identifying and analyzing disinformation, misinformation, and influence narratives within text articles.
-    For more information, please see the [README.md](README.md) file.
+    It leverages large language models (LLMs) to break down articles into manageable chunks, analyze each chunk for
+    potential narratives, and then semantically group similar narratives for a comprehensive overview.
+
+    **How to Use:**
+    1.  **Enter your OpenAI API Key:** Provide your OpenAI API key.
+    2.  **Choose Input Method:** Upload a `.txt` file or paste text manually.
+    3.  **Run Analysis:** Click "Run Analysis" to start.
+    4.  **Review Results:** Explore per-chunk analysis, identified narratives, and download a CSV report.
+
+    For more detailed information, please see the [README.md](README.md) file.
 """)
 
 # --- API Key Input ---
