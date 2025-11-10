@@ -12,30 +12,7 @@ st.title("Disinformation Narrative Analysis")
 
 st.markdown("""
     This tool helps in identifying and analyzing disinformation, misinformation, and influence narratives within text articles.
-    It leverages large language models (LLMs) to break down articles into manageable chunks, analyze each chunk for
-    potential narratives, and then semantically group similar narratives for a comprehensive overview.
-
-    **Intent:**
-    The primary intent of this application is to assist researchers, analysts, and the general public in understanding
-    the underlying narratives present in various texts, especially those that might contain disinformation. By
-    highlighting these narratives and providing supporting excerpts and analysis, the tool aims to foster critical
-    thinking and informed decision-making.
-
-    **Usage:**
-    1.  **Enter your OpenAI API Key:** Provide your OpenAI API key to enable the LLM analysis. Your key is not stored.
-    2.  **Choose Input Method:**
-        *   **Upload a .txt file:** Upload a text file containing the article you wish to analyze.
-        *   **Paste text manually:** Paste the article content directly into the text area.
-    3.  **Run Analysis:** Click the "Run Analysis" button to start the process. The tool will:
-        *   Process the text in chunks.
-        *   Identify disinformation narratives within each chunk using an LLM.
-        *   Semantically group similar narratives across the entire article.
-    4.  **Review Results:**
-        *   **Per-Chunk Analysis:** Expand each chunk to see the detailed LLM analysis, including identified narratives,
-            supporting excerpts, and the LLM's reasoning.
-        *   **Narratives Identified:** View a consolidated list of unique narratives, their mention count, and which
-            chunks they appear in.
-        *   **Download Analysis (CSV):** Download a CSV file summarizing the identified narratives.
+    For more information, please see the [README.md](README.md) file.
 """)
 
 # --- API Key Input ---
