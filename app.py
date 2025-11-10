@@ -20,8 +20,6 @@ st.markdown("""
     2.  **Choose Input Method:** Upload a `.txt` file or paste text manually.
     3.  **Run Analysis:** Click "Run Analysis" to start.
     4.  **Review Results:** Explore per-chunk analysis, identified narratives, and download a CSV report.
-
-    For more detailed information, please see the [README.md](README.md) file.
 """)
 
 # --- API Key Input ---
