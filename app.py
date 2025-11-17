@@ -7,6 +7,8 @@ from collections import Counter, defaultdict
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import AgglomerativeClustering
 
+client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+
 st.set_page_config(page_title="Disinformation Narrative Analyzer", layout="wide")
 st.title("Disinformation Narrative Analysis")
 
@@ -21,12 +23,6 @@ st.markdown("""
     3.  **Run Analysis:** Click "Run Analysis" to start.
     4.  **Review Results:** Explore per-chunk analysis, identified narratives, and download a CSV report.
 """)
-
-# --- API Key Input ---
-openai_api_key = st.text_input("Enter your OpenAI API Key:", type="password")
-if not openai_api_key:
-    st.stop()
-client = OpenAI(api_key=openai_api_key)
 
 # --- Input Selection ---
 input_option = st.radio(
